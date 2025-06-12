@@ -1,0 +1,44 @@
+name: Build IPA
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Checkout Theos
+        uses: actions/checkout@v3
+        with:
+          repository: theos/theos
+          path: theos
+
+      - name: Checkout iOS SDKs
+        uses: actions/checkout@v3
+        with:
+          repository: xybp888/iOS-SDKs
+          path: theos/sdks
+          sparse-checkout: iPhoneOS15.5.sdk
+
+      - name: Install dependencies
+        run: brew install make ldid xz
+
+      - name: Build IPA
+        run: |
+          export THEOS=theos
+          gmake clean package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ipa-files
+          path: packages/*.ipa
